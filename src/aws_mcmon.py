@@ -2,48 +2,19 @@ import aws_mcstatus
 import time
 from threading import Timer
 
-class mcInstance():
-    def __init__(self, id, status, stime):
-        self.stime  = time.time()
-        self.status = status
-        self.id     = id
+debug = True
 
-class RepeatedTimer(object):
-    def __init__(self, interval, function, *args, **kwargs):
-        self._timer     = None
-        self.interval   = interval
-        self.function   = function
-        self.args       = args
-        self.kwargs     = kwargs
-        self.is_running = False
-        self.start()
+defaultTimeout = 5 #minutes
 
-    def _run(self):
-        self.is_running = False
-        self.start()
-        self.function(*self.args, **self.kwargs)
+# Initialize instance statuses
+awsinstances = aws_mcstatus.initInstances(defaultTimeout)
+repeatCheck = aws_mcstatus.RepeatedTimer(5, aws_mcstatus.updateStatuses, awsinstances) # it auto-starts, no need of rt.start()
 
-    def start(self):
-        if not self.is_running:
-            self._timer = Timer(self.interval, self._run)
-            self._timer.start()
-            self.is_running = True
-
-    def stop(self):
-        self._timer.cancel()
-        self.is_running = False
-
-def update_mc_status(instance):
-    print("Hello {0}!".format(name))
-
-awsinstances = []
-i=0
-for instance in aws_mcstatus.getinstances():
-   #awsinstances[i] = mcInstance()
-   print(instance[1])
-
-#rt = RepeatedTimer(1, hello, "World") # it auto-starts, no need of rt.start()
-try:
-    time.sleep(5) # your long-running job goes here...
-finally:
-    rt.stop() # better in a try/finally block to make sure the program ends!
+while True:
+    # Start main loop to check how long in state
+    for i in awsinstances:
+        if i.timeoutReached:
+            print("Shutdown {}".format(i.id))
+        else:
+            print("ID {} not times out yet".format(i.id))
+    time.sleep(60)

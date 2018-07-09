@@ -4,13 +4,14 @@ import argparse
 import time
 from threading import Timer
 
+client = boto3.client('ec2')
+
 def countMcPlayers(host,port):
     server = mcstatus.MinecraftServer.lookup(host + ":" + port)
     status = server.status()
     return status.players.online
     
 def getReservations():
-    client = boto3.client('ec2')
     reservations = client.describe_instances()
     return reservations
 
@@ -31,6 +32,15 @@ def getState(id):
         else:
             state = 0
         return state
+
+def stopInstance(id):
+    #Confirm running
+    if getState(id) == 1:
+        #Running. Issue shutdown
+        client.stop_instances(id)
+    else:
+        print("{0} was not running".format(id))
+
 
 def getinstances():
     reservations = getReservations()

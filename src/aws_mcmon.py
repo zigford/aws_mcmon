@@ -1,23 +1,27 @@
 import aws_mcstatus
 import time
+from flask import Flask, render_template, request, redirect
 from threading import Timer
 
+app = Flask(__name__)
 debug = True
-
-defaultTimeout = 1 #minutes
+defaultTimeout = 30 #minutes
 
 # Initialize instance statuses
 awsinstances = aws_mcstatus.initInstances(defaultTimeout)
-repeatCheck = aws_mcstatus.RepeatedTimer(5, aws_mcstatus.updateStatuses, awsinstances) # it auto-starts, no need of rt.start()
+bgCheck = aws_mcstatus.RepeatedTimer(300, aws_mcstatus.updateStatuses, awsinstances) # it auto-starts, no need of rt.start()
 
-while True:
-    # Start main loop to check how long in state
-    for i in awsinstances:
-        if i.timeoutReached and i.state == 1:
-            print("Shutdown {}".format(i.id))
-            i.stop()
-        elif i.state == 0:
-            print("ID {} not running".format(i.id))
-        else:
-            print("ID {} not times out yet".format(i.id))
-    time.sleep(60)
+@app.route('/')
+def home_page():
+    title = "aws_mcstatus"
+    return render_template('start.html', title=title)
+
+@app.route('/start', methods = ['POST'])
+def start():
+    server = request.form['server']
+    print("Starting {0}".format(server))
+    aws_mcstatus.startInstance(server)
+    return redirect('/')
+
+if __name__ == '__main__':
+    app.run()

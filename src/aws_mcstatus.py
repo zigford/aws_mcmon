@@ -34,6 +34,16 @@ def getState(id):
             state = 0
         return state
 
+def getHost(id):
+    i = getInstance(id)
+    for nic in i['NetworkInterfaces']:
+        if 'Association' in nic:
+            hostname = nic['Association']['PublicDnsName']
+        else:
+            hostname = None
+    return hostname
+
+
 def stopInstance(id):
     #Confirm running
     if getState(id) == 1:
@@ -43,6 +53,14 @@ def stopInstance(id):
     else:
         print("{0} was not running".format(id))
 
+def startInstance(id):
+    #Confirm not running
+    if getState(id) == 0:
+        #Not running. Startup
+        result = client.start_instances(InstanceIds=[id])
+        print(result)
+    else:
+        print("{0} was not running".format(id))
 
 def getinstances():
     reservations = getReservations()
@@ -79,26 +97,31 @@ class mcInstance():
     def checkStateChange(self):
         newstate = getState(self.id)
         if self.state != newstate:
-            if Debug:
+            if debug:
                 print("Updating state to {}".format(newstate))
             self.state = newstate
+            if newstate == 1:
+                #Update hostname
+                self.host = getHost(self.id)
             self.stime = time.time()
 
     def checkUserChange(self):
         if self.state == 1:
             users = countMcPlayers(self.host,"25565")
             if self.users != users:
-                if Debug:
+                if debug:
                     print("Updating users to {}".format(users))
                 self.users = users
                 self.stime = time.time()
 
     def updateStatus(self):
+        print("Updating status for {0}".format(self.id))
         self.checkStateChange()
         self.checkUserChange()
         if self.state == 1 and self.users == 0:
             timeout = self.stime + (self.timeout * 60)
             if time.time() > timeout:
+                self.stop()
                 self.timeoutReached = True
 
     def stop(self):

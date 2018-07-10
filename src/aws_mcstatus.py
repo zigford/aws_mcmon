@@ -4,6 +4,7 @@ import argparse
 import time
 from threading import Timer
 
+debug = True
 client = boto3.client('ec2')
 
 def countMcPlayers(host,port):
@@ -37,7 +38,8 @@ def stopInstance(id):
     #Confirm running
     if getState(id) == 1:
         #Running. Issue shutdown
-        client.stop_instances(id)
+        result = client.stop_instances(InstanceIds=[id])
+        print(result)
     else:
         print("{0} was not running".format(id))
 
@@ -98,6 +100,9 @@ class mcInstance():
             timeout = self.stime + (self.timeout * 60)
             if time.time() > timeout:
                 self.timeoutReached = True
+
+    def stop(self):
+        stopInstance(self.id)
 
 def updateStatuses(mcInstances):
     for i in mcInstances:

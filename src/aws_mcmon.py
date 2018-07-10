@@ -1,6 +1,10 @@
 import aws_mcstatus
 import time
-from flask import Flask, render_template, request, redirect
+from flask import Flask
+from flask import render_template
+from flask import request
+from flask import redirect
+from flask import jsonify
 from threading import Timer
 
 app = Flask(__name__)
@@ -22,6 +26,14 @@ def start():
     print("Starting {0}".format(server))
     aws_mcstatus.startInstance(server)
     return redirect('/')
+
+@app.route('/status')
+def status():
+    stats = []
+    for i in awsinstances:
+        stats.append({'instance' : i.id, 'state' : i.state, 'users' : i.users, 'host' : i.host})
+    return jsonify(stats)
+
 
 if __name__ == '__main__':
     app.run()

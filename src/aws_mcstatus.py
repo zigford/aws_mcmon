@@ -62,7 +62,7 @@ def startInstance(id):
     else:
         print("{0} was not running".format(id))
 
-def getinstances():
+def getinstances(timeout):
     reservations = getReservations()
     instances = []
     for reservation in reservations['Reservations']:
@@ -81,7 +81,14 @@ def getinstances():
                 users = countMcPlayers(hostname,"25565")
             else:
                 users = 0
-            instances.append([instance['InstanceId'],state,hostname,users])
+
+            for tag in instance['Tags']:
+                if tag['Key'] == 'Name':
+                    insName = tag['Value']
+
+            if not insName: insName = None
+
+            instances.append(mcInstance([instance['InstanceId'],state,hostname,users,insName],timeout))
     return instances
 
 class mcInstance():
@@ -91,6 +98,7 @@ class mcInstance():
         self.state          = instance[1]
         self.host           = instance[2]
         self.users          = instance[3]
+        self.name           = instance[4]
         self.timeout        = timeout
         self.timeoutReached = False
 
@@ -100,9 +108,7 @@ class mcInstance():
             if debug:
                 print("Updating state to {}".format(newstate))
             self.state = newstate
-            if newstate == 1:
-                #Update hostname
-                self.host = getHost(self.id)
+            self.host = getHost(self.id)
             self.stime = time.time()
 
     def checkUserChange(self):
@@ -130,12 +136,6 @@ class mcInstance():
 def updateStatuses(mcInstances):
     for i in mcInstances:
         i.updateStatus()
-
-def initInstances(timeout):
-    instances = []
-    for instance in getinstances():
-        instances.append(mcInstance(instance,timeout))
-    return instances
 
 class RepeatedTimer(object):
     def __init__(self, interval, function, *args, **kwargs):

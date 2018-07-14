@@ -12,7 +12,7 @@ debug = True
 defaultTimeout = 30 #minutes
 
 # Initialize instance statuses
-awsinstances = aws_mcstatus.initInstances(defaultTimeout)
+awsinstances = aws_mcstatus.getinstances(defaultTimeout)
 bgCheck = aws_mcstatus.RepeatedTimer(300, aws_mcstatus.updateStatuses, awsinstances) # it auto-starts, no need of rt.start()
 
 @app.route('/')
@@ -29,9 +29,15 @@ def start():
 
 @app.route('/status')
 def status():
+    aws_mcstatus.updateStatuses(awsinstances)
     stats = []
     for i in awsinstances:
-        stats.append({'instance' : i.id, 'state' : i.state, 'users' : i.users, 'host' : i.host})
+        stats.append({
+            'instance' : i.id,
+            'state' : i.state,
+            'users' : i.users,
+            'host' : i.host,
+            'name' : i.name})
     return jsonify(stats)
 
 
